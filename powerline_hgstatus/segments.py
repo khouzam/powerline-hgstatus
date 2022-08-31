@@ -29,7 +29,7 @@ class HgStatusSegment(Segment):
         added_files = 0
         removed_files = 0
 
-        output, err = self.execute(pl, ['hg', 'status', '-R', cwd])
+        output, err = self.execute(pl, ['hg', 'status'])
 
         if len(output) == 0:
             return modified_files, untracked_files, missing_files, added_files, removed_files
@@ -51,7 +51,7 @@ class HgStatusSegment(Segment):
         return modified_files, untracked_files, missing_files, added_files, removed_files
 
     def get_hg_branch(self, pl, cwd):
-        output, err = self.execute(pl, ['hg', 'branch', '-R', cwd])
+        output, err = self.execute(pl, ['hg', 'branch'])
 
         if len(output) == 0:
             return False
@@ -59,6 +59,26 @@ class HgStatusSegment(Segment):
         branch = output[0]
 
         return branch
+
+    def get_hg_bookmark(self, pl, cwd):
+        output, err = self.execute(pl, ['hg', 'bookmark'])
+
+        bookmark = ''
+
+        if len(output) == 0:
+            return self.get_hg_branch(pl, cwd)
+
+        for line in output:
+            words = line.split()
+            if len(words) == 0:
+                continue
+            elif words[0] == '*':
+                bookmark = words[1]
+
+        if len(bookmark) == 0:
+            return self.get_hg_branch(pl, cwd)
+
+        return bookmark
 
     def build_segments(self, branch, pl, cwd):
         modified_files, untracked_files, missing_files, added_files, removed_files = self.get_hg_status(pl, cwd)
@@ -93,7 +113,7 @@ class HgStatusSegment(Segment):
         if not cwd:
             return
 
-        branch = self.get_hg_branch(pl, cwd)
+        branch = self.get_hg_bookmark(pl, cwd)
 
         if not branch:
             return
